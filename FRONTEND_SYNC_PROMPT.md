@@ -1,6 +1,6 @@
-# Frontend Sync Prompt for Kore E-Commerce
+# Kore E-Commerce Backend Sync Prompt
 
-> **CRITICAL**: Use this document when implementing the frontend to ensure all API calls match the backend exactly. Route mismatches will cause failures.
+This document describes the backend API requirements to fully support the Kore E-Commerce frontend.
 
 ---
 
@@ -74,576 +74,312 @@ sequenceDiagram
 
 ---
 
-## Base Configuration
+## Technology Stack
+- **Runtime**: Node.js with Express.js
+- **Database**: MongoDB with Mongoose
+- **Authentication**: JWT with HTTP-only cookies (access token + refresh token)
+- **Payments**: Stripe
+- **Password Hashing**: bcrypt (salt rounds: 12)
 
+---
+
+## Data Models
+
+### User
 ```javascript
-// All API calls use this base URL
-const API_BASE_URL = 'http://localhost:5000/api';
-
-// CRITICAL: Include credentials for cookie-based auth
-const fetchConfig = {
-  credentials: 'include', // Required for httpOnly cookies
-  headers: {
-    'Content-Type': 'application/json'
-  }
-};
-```
-
-> [!CAUTION]
-> **Cookie-Based Authentication**: This backend uses `httpOnly` cookies, NOT Bearer tokens. You MUST set `credentials: 'include'` on ALL fetch requests. There is NO Authorization header.
-
----
-
-## Authentication API
-
-All auth routes use cookies automatically. Login/Register set cookies in the response.
-
-### Register User
-```http
-POST /api/auth/register
-Content-Type: application/json
-
 {
-  "email": "user@example.com",
-  "password": "Password123!",
-  "name": "John Doe"
+  _id: ObjectId,
+  name: String (required),
+  email: String (required, unique),
+  password: String (required, hashed with bcrypt),
+  role: String (enum: ['user', 'admin'], default: 'user'),
+  createdAt: Date,
+  updatedAt: Date
 }
 ```
 
-**Response (201):**
-```json
+### Product
+```javascript
 {
-  "success": true,
-  "message": "Registration successful",
-  "data": {
-    "user": {
-      "id": "user_id",
-      "email": "user@example.com",
-      "name": "John Doe",
-      "role": "user"
-    }
-  }
+  _id: ObjectId,
+  name: String (required),
+  description: String,
+  price: Number (required),
+  category: String (required),
+  images: [String] (required, array of URLs),
+  stock: Number (required, default: 0),
+  isActive: Boolean (default: true),
+  createdAt: Date,
+  updatedAt: Date
 }
 ```
 
----
-
-### Login
-```http
-POST /api/auth/login
-Content-Type: application/json
-
+### Order
+```javascript
 {
-  "email": "user@example.com",
-  "password": "Password123!"
-}
-```
-
-**Response (200):**
-```json
-{
-  "success": true,
-  "message": "Login successful",
-  "data": {
-    "user": {
-      "id": "user_id",
-      "email": "user@example.com",
-      "name": "John Doe",
-      "role": "user"
-    }
-  }
-}
-```
-
----
-
-### Get Current User
-```http
-GET /api/auth/me
-```
-
-**Response (200):**
-```json
-{
-  "success": true,
-  "data": {
-    "user": {
-      "id": "user_id",
-      "email": "user@example.com",
-      "name": "John Doe",
-      "role": "user",
-      "createdAt": "2024-01-01T00:00:00.000Z"
-    }
-  }
-}
-```
-
----
-
-### Logout
-```http
-POST /api/auth/logout
-```
-
-**Response (200):**
-```json
-{
-  "success": true,
-  "message": "Logout successful"
-}
-```
-
----
-
-### Refresh Token
-```http
-POST /api/auth/refresh
-```
-> Called automatically when access token expires. Uses `refreshToken` cookie.
-
----
-
-## User Profile API
-
-### Update Profile
-```http
-PUT /api/users/profile
-Content-Type: application/json
-
-{
-  "name": "Updated Name",
-  "password": "NewPassword123!" // Optional
-}
-```
-
-**Response (200):**
-```json
-{
-  "success": true,
-  "message": "Profile updated successfully",
-  "data": {
-    "user": {
-      "id": "user_id",
-      "email": "user@example.com",
-      "name": "Updated Name",
-      "role": "user"
-    }
-  }
-}
-```
-
----
-
-## Products API
-
-### Get Products (with Cursor Pagination)
-```http
-GET /api/products?limit=10&cursor=optional_cursor
-```
-
-**Response (200):**
-```json
-{
-  "success": true,
-  "data": {
-    "data": [
-      {
-        "_id": "product_id",
-        "name": "Product Name",
-        "description": "...",
-        "price": 29.99,
-        "category": "Electronics",
-        "stock": 50,
-        "images": ["url1.jpg"],
-        "isActive": true,
-        "createdAt": "2024-01-01T00:00:00.000Z"
-      }
-    ],
-    "pagination": {
-      "nextCursor": "next_cursor_id",
-      "hasMore": true,
-      "limit": 10
-    }
-  }
-}
-```
-
----
-
-### Get Single Product
-```http
-GET /api/products/:id
-```
-
----
-
-## Orders API
-
-> [!IMPORTANT]
-> All order endpoints require authentication (cookies must be sent).
-
-### Create Order
-```http
-POST /api/orders
-Content-Type: application/json
-
-{
-  "orderItems": [
-    {
-      "product": "product_id",
-      "name": "Product Name",
-      "qty": 2,
-      "price": 29.99,
-      "image": "product_image_url.jpg"
-    }
-  ],
-  "shippingAddress": {
-    "address": "123 Main St",
-    "city": "New York",
-    "postalCode": "10001",
-    "country": "USA"
+  _id: ObjectId,
+  user: ObjectId (ref: 'User'),
+  orderItems: [{
+    product: ObjectId (ref: 'Product'),
+    name: String,
+    qty: Number,
+    price: Number,
+    image: String
+  }],
+  shippingAddress: {
+    address: String,
+    city: String,
+    postalCode: String,
+    country: String
   },
-  "paymentMethod": "stripe",
-  "taxPrice": 5.00,
-  "shippingPrice": 10.00,
-  "totalPrice": 74.98
-}
-```
-
-**Response (201):**
-```json
-{
-  "success": true,
-  "message": "Order created successfully",
-  "data": {
-    "order": {
-      "_id": "order_id",
-      "user": "user_id",
-      "orderItems": [...],
-      "shippingAddress": {...},
-      "paymentMethod": "stripe",
-      "taxPrice": 5.00,
-      "shippingPrice": 10.00,
-      "totalPrice": 74.98,
-      "isPaid": false,
-      "isDelivered": false,
-      "createdAt": "2024-01-01T00:00:00.000Z"
-    }
-  }
-}
-```
-
-> [!WARNING]
-> Stock is decremented when the order is created. If stock is insufficient, return `400 Bad Request`.
-
----
-
-### Get My Orders
-```http
-GET /api/orders/myorders
-```
-
-**Response (200):**
-```json
-{
-  "success": true,
-  "data": {
-    "orders": [
-      {
-        "_id": "order_id",
-        "totalPrice": 74.98,
-        "isPaid": false,
-        "isDelivered": false,
-        "createdAt": "2024-01-01T00:00:00.000Z"
-      }
-    ]
-  }
+  paymentMethod: String,
+  taxPrice: Number,
+  shippingPrice: Number,
+  totalPrice: Number,
+  isPaid: Boolean (default: false),
+  paidAt: Date,
+  paymentResult: {
+    id: String,
+    status: String,
+    update_time: String,
+    email_address: String
+  },
+  isDelivered: Boolean (default: false),
+  deliveredAt: Date,
+  createdAt: Date
 }
 ```
 
 ---
 
-### Get Order by ID
-```http
-GET /api/orders/:id
-```
+## API Endpoints
 
-**Response (200):**
-```json
-{
-  "success": true,
-  "data": {
-    "order": {
-      "_id": "order_id",
-      "user": {
-        "_id": "user_id",
-        "name": "John Doe",
-        "email": "user@example.com"
-      },
-      "orderItems": [...],
-      "shippingAddress": {...},
-      "paymentMethod": "stripe",
-      "taxPrice": 5.00,
-      "shippingPrice": 10.00,
-      "totalPrice": 74.98,
-      "isPaid": false,
-      "paidAt": null,
-      "isDelivered": false,
-      "deliveredAt": null,
-      "paymentResult": null,
-      "createdAt": "2024-01-01T00:00:00.000Z"
-    }
-  }
-}
-```
-
----
-
-### Update Order to Paid
-```http
-PUT /api/orders/:id/pay
-Content-Type: application/json
-
-{
-  "id": "stripe_payment_intent_id",
-  "status": "succeeded",
-  "update_time": "2024-01-01T12:00:00.000Z",
-  "email_address": "payer@email.com"
-}
-```
-
-**Response (200):**
-```json
-{
-  "success": true,
-  "message": "Order marked as paid",
-  "data": {
-    "order": {
-      "_id": "order_id",
-      "isPaid": true,
-      "paidAt": "2024-01-01T12:00:00.000Z",
-      "paymentResult": {
-        "id": "stripe_payment_intent_id",
-        "status": "succeeded",
-        "update_time": "2024-01-01T12:00:00.000Z",
-        "email_address": "payer@email.com"
-      }
-    }
-  }
-}
-```
-
----
-
-### Get All Orders (Admin Only)
-```http
-GET /api/orders
-```
-
----
-
-## Payment API (Stripe)
-
-### Get Stripe Publishable Key
-```http
-GET /api/config/stripe
-```
-
-**Response (200):**
-```json
-{
-  "success": true,
-  "data": {
-    "publishableKey": "pk_test_..."
-  }
-}
-```
-
----
-
-### Create Payment Intent
-```http
-POST /api/payment/create-payment-intent
-Content-Type: application/json
-
-{
-  "orderId": "order_id"
-}
-```
-
-**Response (200):**
-```json
-{
-  "success": true,
-  "data": {
-    "clientSecret": "pi_xxx_secret_xxx"
-  }
-}
-```
-
-> [!TIP]
-> Use this `clientSecret` with Stripe.js `confirmCardPayment()` method.
-
----
-
-## Error Response Format
-
-All errors follow this structure:
-
-```json
-{
-  "success": false,
-  "message": "Error message",
-  "errors": [
-    {
-      "field": "email",
-      "message": "Invalid email format"
-    }
-  ]
-}
-```
-
-**HTTP Status Codes:**
-- `400` - Bad Request (validation errors)
-- `401` - Unauthorized (not logged in / token expired)
-- `403` - Forbidden (insufficient permissions)
-- `404` - Not Found
-- `500` - Server Error
-
----
-
-## Frontend Implementation Notes
-
-### 1. RTK Query / Axios Setup
-
+### Response Format
+All endpoints return:
 ```javascript
-// api/apiSlice.js
-import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
+{
+  success: true,
+  data: { ... },
+  message?: string
+}
+```
 
-export const apiSlice = createApi({
-  baseQuery: fetchBaseQuery({
-    baseUrl: 'http://localhost:5000/api',
-    credentials: 'include', // CRITICAL!
-  }),
-  tagTypes: ['User', 'Product', 'Order'],
-  endpoints: () => ({}),
+Error responses:
+```javascript
+{
+  success: false,
+  message: "Error description",
+  errors?: [{ field: string, message: string }]
+}
+```
+
+---
+
+### Authentication Routes
+
+| Method | Route | Description | Auth |
+|--------|-------|-------------|------|
+| `POST` | `/api/auth/register` | Register new user | No |
+| `POST` | `/api/auth/login` | Login, set cookies | No |
+| `POST` | `/api/auth/logout` | Clear cookies | Yes |
+| `GET` | `/api/auth/me` | Get current user | Yes |
+| `POST` | `/api/auth/refresh` | Refresh access token | Cookie |
+
+**Cookie Configuration:**
+```javascript
+// Access Token Cookie
+res.cookie('accessToken', token, {
+  httpOnly: true,
+  secure: process.env.NODE_ENV === 'production',
+  sameSite: 'lax',
+  maxAge: 15 * 60 * 1000  // 15 minutes
+});
+
+// Refresh Token Cookie
+res.cookie('refreshToken', refreshToken, {
+  httpOnly: true,
+  secure: process.env.NODE_ENV === 'production',
+  sameSite: 'lax',
+  maxAge: 7 * 24 * 60 * 60 * 1000  // 7 days
 });
 ```
 
-### 2. Token Refresh Interceptor
+---
 
-Implement an interceptor to call `POST /api/auth/refresh` when you receive a `401` response with message "Access token expired":
+### User Routes
 
+| Method | Route | Description | Auth |
+|--------|-------|-------------|------|
+| `PUT` | `/api/users/profile` | Update user profile | Yes |
+
+**Request Body:**
 ```javascript
-// Example with Axios
-axios.interceptors.response.use(
-  (response) => response,
-  async (error) => {
-    if (error.response?.status === 401 && 
-        error.response?.data?.message === 'Access token expired') {
-      await axios.post('/api/auth/refresh', {}, { withCredentials: true });
-      return axios(error.config); // Retry original request
-    }
-    return Promise.reject(error);
-  }
-);
+{ name?: string, password?: string }
 ```
 
-### 3. Protected Routes
+---
 
-Check if user is authenticated before allowing access:
+### Product Routes
 
-```jsx
-// ProtectedRoute.jsx
-const ProtectedRoute = ({ children }) => {
-  const { data: user, isLoading } = useGetMeQuery();
+| Method | Route | Description | Auth |
+|--------|-------|-------------|------|
+| `GET` | `/api/products` | List products (cursor pagination) | No |
+| `GET` | `/api/products/:id` | Get single product | No |
+| `POST` | `/api/products` | Create product | Admin |
+| `PUT` | `/api/products/:id` | Update product | Admin |
+| `DELETE` | `/api/products/:id` | Delete product | Admin |
+
+**GET /api/products Response:**
+```javascript
+{
+  success: true,
+  data: {
+    data: [...products],
+    pagination: {
+      hasMore: boolean,
+      nextCursor: string | null
+    }
+  }
+}
+```
+
+**POST /api/products Request:**
+```javascript
+{
+  name: string,
+  description?: string,
+  price: number,
+  category: string,
+  images: string[],
+  stock: number
+}
+```
+
+---
+
+### Order Routes
+
+| Method | Route | Description | Auth |
+|--------|-------|-------------|------|
+| `POST` | `/api/orders` | Create order | Yes |
+| `GET` | `/api/orders/myorders` | Get user's orders | Yes |
+| `GET` | `/api/orders/:id` | Get order by ID | Yes |
+| `GET` | `/api/orders` | Get all orders | Admin |
+| `PUT` | `/api/orders/:id/pay` | Mark order as paid | Yes |
+| `PUT` | `/api/orders/:id/deliver` | Mark as delivered | Admin |
+
+**POST /api/orders Request:**
+```javascript
+{
+  orderItems: [{
+    product: string,  // Product _id
+    name: string,
+    qty: number,
+    price: number,
+    image: string
+  }],
+  shippingAddress: {
+    address: string,
+    city: string,
+    postalCode: string,
+    country: string
+  },
+  paymentMethod: string,
+  taxPrice: number,
+  shippingPrice: number,
+  totalPrice: number
+}
+```
+
+**PUT /api/orders/:id/pay Request:**
+```javascript
+{
+  id: string,           // Stripe Payment Intent ID
+  status: string,
+  update_time: string,
+  email_address: string
+}
+```
+
+---
+
+### Payment Routes (Stripe)
+
+| Method | Route | Description | Auth |
+|--------|-------|-------------|------|
+| `GET` | `/api/config/stripe` | Get publishable key | No |
+| `POST` | `/api/payment/create-payment-intent` | Create payment intent | Yes |
+
+**GET /api/config/stripe Response:**
+```javascript
+{ success: true, data: { publishableKey: "pk_test_..." } }
+```
+
+**POST /api/payment/create-payment-intent Request:**
+```javascript
+{ orderId: string }
+```
+
+**Response:**
+```javascript
+{ success: true, data: { clientSecret: "pi_..." } }
+```
+
+---
+
+## Middleware
+
+### Auth Middleware
+```javascript
+// Verify access token from cookies
+const authMiddleware = async (req, res, next) => {
+  const token = req.cookies.accessToken;
+  if (!token) return res.status(401).json({ success: false, message: 'Not authorized' });
   
-  if (isLoading) return <Spinner />;
-  if (!user) return <Navigate to="/login" />;
-  
-  return children;
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    req.user = await User.findById(decoded.id).select('-password');
+    next();
+  } catch (error) {
+    res.status(401).json({ success: false, message: 'Token invalid' });
+  }
 };
 ```
 
-### 4. Stripe Integration
-
-```jsx
-import { loadStripe } from '@stripe/stripe-js';
-import { Elements, CardElement, useStripe, useElements } from '@stripe/react-stripe-js';
-
-// Fetch publishable key from backend
-const stripePromise = fetch('/api/config/stripe')
-  .then(res => res.json())
-  .then(({ data }) => loadStripe(data.publishableKey));
-
-// Payment form component
-const PaymentForm = ({ orderId, onSuccess }) => {
-  const stripe = useStripe();
-  const elements = useElements();
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    
-    // 1. Create PaymentIntent
-    const { data } = await fetch('/api/payment/create-payment-intent', {
-      method: 'POST',
-      credentials: 'include',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ orderId })
-    }).then(r => r.json());
-    
-    // 2. Confirm payment
-    const { paymentIntent, error } = await stripe.confirmCardPayment(
-      data.clientSecret,
-      { payment_method: { card: elements.getElement(CardElement) } }
-    );
-    
-    // 3. Update order if successful
-    if (paymentIntent?.status === 'succeeded') {
-      await fetch(`/api/orders/${orderId}/pay`, {
-        method: 'PUT',
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          id: paymentIntent.id,
-          status: paymentIntent.status,
-          update_time: new Date().toISOString(),
-          email_address: 'customer@email.com'
-        })
-      });
-      onSuccess();
-    }
-  };
-  
-  return (
-    <form onSubmit={handleSubmit}>
-      <CardElement />
-      <button type="submit">Pay Now</button>
-    </form>
-  );
+### Admin Middleware
+```javascript
+const adminMiddleware = (req, res, next) => {
+  if (req.user?.role !== 'admin') {
+    return res.status(403).json({ success: false, message: 'Admin access required' });
+  }
+  next();
 };
 ```
 
 ---
 
-## Route Reference Table
+## CORS Configuration
 
-| Frontend Action | Method | Backend Route | Auth Required |
-|-----------------|--------|---------------|---------------|
-| Register | `POST` | `/api/auth/register` | No |
-| Login | `POST` | `/api/auth/login` | No |
-| Logout | `POST` | `/api/auth/logout` | No |
-| Get Current User | `GET` | `/api/auth/me` | Yes |
-| Refresh Token | `POST` | `/api/auth/refresh` | Cookie |
-| Update Profile | `PUT` | `/api/users/profile` | Yes |
-| List Products | `GET` | `/api/products` | No |
-| Get Product | `GET` | `/api/products/:id` | No |
-| Create Order | `POST` | `/api/orders` | Yes |
-| Get My Orders | `GET` | `/api/orders/myorders` | Yes |
-| Get Order | `GET` | `/api/orders/:id` | Yes |
-| Pay Order | `PUT` | `/api/orders/:id/pay` | Yes |
-| Get Stripe Key | `GET` | `/api/config/stripe` | No |
-| Create Payment Intent | `POST` | `/api/payment/create-payment-intent` | Yes |
+```javascript
+app.use(cors({
+  origin: 'http://localhost:5173',  // Vite dev server
+  credentials: true  // Required for cookies
+}));
+```
+
+---
+
+## Environment Variables
+
+```env
+PORT=5000
+MONGODB_URI=mongodb://localhost:27017/kore
+JWT_ACCESS_SECRET=your-super-secret-jwt-key
+JWT_REFRESH_SECRET=your-refresh-token-secret
+STRIPE_SECRET_KEY=sk_test_...
+STRIPE_PUBLISHABLE_KEY=pk_test_...
+NODE_ENV=development
+```
 
 ---
 
@@ -654,7 +390,5 @@ const PaymentForm = ({ orderId, onSuccess }) => {
 | Admin | `admin@kore.com` | `Admin123!` |
 | User | `user@test.com` | `User123!` |
 
----
-
-> [!IMPORTANT]
-> **Remember**: All routes are prefixed with `/api`. The backend runs on port `5000` by default.
+> [!TIP]
+> Run `npm run seed` to populate the database with sample users, products, and an order.
