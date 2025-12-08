@@ -253,8 +253,10 @@ res.cookie('refreshToken', refreshToken, {
 | Param | Type | Description |
 |-------|------|-------------|
 | `search` | string | Search by name or description (case-insensitive) |
-| `category` | string | Filter by category |
-| `sort` | string | `price_asc`, `price_desc`, or `newest` |
+| `category` | string or string[] | Filter by category (single or multiple) |
+| `sort` | string | `price_asc`, `price_desc`, `newest`, or `name_asc` |
+| `minPrice` | number | Minimum price filter |
+| `maxPrice` | number | Maximum price filter |
 | `cursor` | string | Pagination cursor |
 | `limit` | number | Items per page (default: 20) |
 

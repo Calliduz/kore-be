@@ -14,21 +14,27 @@ import { CreateProductInput, UpdateProductInput, ProductQuery } from '../schemas
 /**
  * GET /products
  * Get products with cursor-based pagination, search, filters, and sorting
- * Query params: search, category, sort (price_asc, price_desc, newest)
+ * Query params: search, category, sort, minPrice, maxPrice
  */
 export const getProducts = asyncHandler(async (req: Request, res: Response) => {
   const query = req.query as unknown as ProductQuery & { 
     search?: string; 
     sort?: string;
+    minPrice?: string;
+    maxPrice?: string;
   };
   const pagination = parsePaginationQuery(query);
 
   // Build filter
   const filter: Record<string, unknown> = { isActive: true };
 
-  // Category filter
+  // Category filter (supports single string or array of strings)
   if (query.category) {
-    filter.category = query.category;
+    if (Array.isArray(query.category)) {
+      filter.category = { $in: query.category };
+    } else {
+      filter.category = query.category;
+    }
   }
 
   // Search filter (case-insensitive regex for fuzzy matching)
@@ -38,6 +44,17 @@ export const getProducts = asyncHandler(async (req: Request, res: Response) => {
       { name: searchRegex },
       { description: searchRegex },
     ];
+  }
+
+  // Price range filter
+  if (query.minPrice || query.maxPrice) {
+    filter.price = {};
+    if (query.minPrice) {
+      (filter.price as Record<string, number>).$gte = parseFloat(query.minPrice);
+    }
+    if (query.maxPrice) {
+      (filter.price as Record<string, number>).$lte = parseFloat(query.maxPrice);
+    }
   }
 
   if (query.isActive !== undefined) {
@@ -55,6 +72,9 @@ export const getProducts = asyncHandler(async (req: Request, res: Response) => {
       break;
     case 'newest':
       sortOptions = { createdAt: -1, _id: 1 };
+      break;
+    case 'name_asc':
+      sortOptions = { name: 1, _id: 1 };
       break;
   }
 
