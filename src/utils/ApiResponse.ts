@@ -92,6 +92,13 @@ export class ApiResponse<T = unknown> {
   }
 
   /**
+   * Static factory for bad request responses
+   */
+  static badRequest(message = 'Bad request'): ApiResponse<null> {
+    return new ApiResponse(400, null, message);
+  }
+
+  /**
    * Static factory for forbidden responses
    */
   static forbidden(message = 'Forbidden'): ApiResponse<null> {

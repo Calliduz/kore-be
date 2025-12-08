@@ -28,6 +28,11 @@ const envSchema = z.object({
   
   // CORS
   CLIENT_URL: z.string().url().default('http://localhost:5173'),
+
+  // Stripe
+  STRIPE_SECRET_KEY: z.string().min(1, 'Stripe secret key is required'),
+  STRIPE_PUBLISHABLE_KEY: z.string().min(1, 'Stripe publishable key is required'),
+  STRIPE_WEBHOOK_SECRET: z.string().optional(),
 });
 
 const parsed = envSchema.safeParse(process.env);

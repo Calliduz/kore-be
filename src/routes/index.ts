@@ -1,6 +1,10 @@
 import { Router, Request, Response } from 'express';
 import authRoutes from './auth.routes.js';
 import productRoutes from './product.routes.js';
+import orderRoutes from './order.routes.js';
+import userRoutes from './user.routes.js';
+import configRoutes from './config.routes.js';
+import paymentRoutes from './payment.routes.js';
 import { ApiResponse } from '../utils/ApiResponse.js';
 
 const router = Router();
@@ -24,5 +28,10 @@ router.get('/health', (_req: Request, res: Response) => {
  */
 router.use('/auth', authRoutes);
 router.use('/products', productRoutes);
+router.use('/orders', orderRoutes);
+router.use('/users', userRoutes);
+router.use('/config', configRoutes);
+router.use('/payment', paymentRoutes);
 
 export default router;
+

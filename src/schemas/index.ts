@@ -17,3 +17,13 @@ export {
   UpdateProductInput,
   ProductQuery,
 } from './product.schema.js';
+
+export {
+  createOrderSchema,
+  updatePaymentSchema,
+  orderIdSchema,
+  CreateOrderInput,
+  UpdatePaymentInput,
+  OrderIdParam,
+} from './order.schema.js';
+

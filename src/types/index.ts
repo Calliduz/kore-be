@@ -34,6 +34,46 @@ export interface IProduct {
   updatedAt: Date;
 }
 
+export interface IOrderItem {
+  product: string;
+  name: string;
+  qty: number;
+  price: number;
+  image: string;
+}
+
+export interface IShippingAddress {
+  address: string;
+  city: string;
+  postalCode: string;
+  country: string;
+}
+
+export interface IPaymentResult {
+  id: string;
+  status: string;
+  update_time: string;
+  email_address: string;
+}
+
+export interface IOrder {
+  _id: string;
+  user: string | IUser;
+  orderItems: IOrderItem[];
+  shippingAddress: IShippingAddress;
+  paymentMethod: string;
+  paymentResult?: IPaymentResult;
+  taxPrice: number;
+  shippingPrice: number;
+  totalPrice: number;
+  isPaid: boolean;
+  paidAt?: Date;
+  isDelivered: boolean;
+  deliveredAt?: Date;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
 export interface AuthRequest extends Request {
   user?: IUser;
 }
