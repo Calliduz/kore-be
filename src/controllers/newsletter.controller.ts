@@ -20,11 +20,8 @@ export const subscribe = asyncHandler(async (req: AuthRequest, res: Response) =>
   // Check if already subscribed
   const existing = await Subscriber.findOne({ email: email.toLowerCase() });
   if (existing) {
-    // Return success even if already subscribed (graceful handling)
-    ApiResponse.success(
-      { subscribed: true },
-      'You are already subscribed to our newsletter'
-    ).send(res);
+    // Return 409 Conflict for duplicate subscription
+    ApiResponse.error('Email already subscribed', 409).send(res);
     return;
   }
 
