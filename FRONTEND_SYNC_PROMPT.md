@@ -150,6 +150,26 @@ sequenceDiagram
 }
 ```
 
+### Wishlist
+```javascript
+{
+  _id: ObjectId,
+  user: ObjectId (ref: 'User', unique),
+  products: [ObjectId] (ref: 'Product'),
+  createdAt: Date,
+  updatedAt: Date
+}
+```
+
+### Subscriber (Newsletter)
+```javascript
+{
+  _id: ObjectId,
+  email: String (required, unique),
+  subscribedAt: Date
+}
+```
+
 ---
 
 ## API Endpoints
@@ -223,11 +243,20 @@ res.cookie('refreshToken', refreshToken, {
 
 | Method | Route | Description | Auth |
 |--------|-------|-------------|------|
-| `GET` | `/api/products` | List products (cursor pagination) | No |
+| `GET` | `/api/products` | List products (with search, filter, sort) | No |
 | `GET` | `/api/products/:id` | Get single product | No |
 | `POST` | `/api/products` | Create product | Admin |
 | `PUT` | `/api/products/:id` | Update product | Admin |
 | `DELETE` | `/api/products/:id` | Delete product | Admin |
+
+**GET /api/products Query Params:**
+| Param | Type | Description |
+|-------|------|-------------|
+| `search` | string | Search by name or description (case-insensitive) |
+| `category` | string | Filter by category |
+| `sort` | string | `price_asc`, `price_desc`, or `newest` |
+| `cursor` | string | Pagination cursor |
+| `limit` | number | Items per page (default: 20) |
 
 **GET /api/products Response:**
 ```javascript
@@ -253,6 +282,45 @@ res.cookie('refreshToken', refreshToken, {
   images: string[],
   stock: number
 }
+```
+
+---
+
+### Wishlist Routes
+
+| Method | Route | Description | Auth |
+|--------|-------|-------------|------|
+| `GET` | `/api/wishlist` | Get user's wishlist (populated) | Yes |
+| `POST` | `/api/wishlist/:productId` | Add product to wishlist | Yes |
+| `DELETE` | `/api/wishlist/:productId` | Remove from wishlist | Yes |
+
+**GET /api/wishlist Response:**
+```javascript
+{
+  success: true,
+  data: {
+    wishlist: [...products]  // Populated product objects
+  }
+}
+```
+
+---
+
+### Newsletter Routes
+
+| Method | Route | Description | Auth |
+|--------|-------|-------------|------|
+| `POST` | `/api/newsletter/subscribe` | Subscribe to newsletter | No |
+| `GET` | `/api/newsletter/subscribers` | Get all subscribers | Admin |
+
+**POST /api/newsletter/subscribe Request:**
+```javascript
+{ email: string }
+```
+
+**Response (handles duplicates gracefully):**
+```javascript
+{ success: true, data: { subscribed: true }, message: "..." }
 ```
 
 ---

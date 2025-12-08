@@ -5,6 +5,8 @@ import orderRoutes from './order.routes.js';
 import userRoutes from './user.routes.js';
 import configRoutes from './config.routes.js';
 import paymentRoutes from './payment.routes.js';
+import wishlistRoutes from './wishlist.routes.js';
+import newsletterRoutes from './newsletter.routes.js';
 import { ApiResponse } from '../utils/ApiResponse.js';
 
 const router = Router();
@@ -32,6 +34,9 @@ router.use('/orders', orderRoutes);
 router.use('/users', userRoutes);
 router.use('/config', configRoutes);
 router.use('/payment', paymentRoutes);
+router.use('/wishlist', wishlistRoutes);
+router.use('/newsletter', newsletterRoutes);
 
 export default router;
+
 

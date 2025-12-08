@@ -13,24 +13,52 @@ import { CreateProductInput, UpdateProductInput, ProductQuery } from '../schemas
 
 /**
  * GET /products
- * Get products with cursor-based pagination and field selection
+ * Get products with cursor-based pagination, search, filters, and sorting
+ * Query params: search, category, sort (price_asc, price_desc, newest)
  */
 export const getProducts = asyncHandler(async (req: Request, res: Response) => {
-  const query = req.query as unknown as ProductQuery;
+  const query = req.query as unknown as ProductQuery & { 
+    search?: string; 
+    sort?: string;
+  };
   const pagination = parsePaginationQuery(query);
 
   // Build filter
   const filter: Record<string, unknown> = { isActive: true };
 
+  // Category filter
   if (query.category) {
     filter.category = query.category;
+  }
+
+  // Search filter (case-insensitive regex for fuzzy matching)
+  if (query.search) {
+    const searchRegex = new RegExp(query.search, 'i');
+    filter.$or = [
+      { name: searchRegex },
+      { description: searchRegex },
+    ];
   }
 
   if (query.isActive !== undefined) {
     filter.isActive = query.isActive;
   }
 
-  // Add cursor filter
+  // Build sort options
+  let sortOptions: Record<string, 1 | -1> = { _id: 1 };
+  switch (query.sort) {
+    case 'price_asc':
+      sortOptions = { price: 1, _id: 1 };
+      break;
+    case 'price_desc':
+      sortOptions = { price: -1, _id: 1 };
+      break;
+    case 'newest':
+      sortOptions = { createdAt: -1, _id: 1 };
+      break;
+  }
+
+  // Add cursor filter (for pagination without sort conflicts)
   const cursorFilter = buildCursorQuery(pagination.cursor);
   const combinedFilter = { ...filter, ...cursorFilter };
 
@@ -46,7 +74,7 @@ export const getProducts = asyncHandler(async (req: Request, res: Response) => {
   }
   
   const products = await queryBuilder
-    .sort({ _id: 1 })
+    .sort(sortOptions)
     .limit(limit + 1)
     .lean();
 
@@ -62,13 +90,18 @@ export const getProducts = asyncHandler(async (req: Request, res: Response) => {
     name: p.name,
     price: p.price,
     description: p.description,
-    image: p.images?.[0] || '',  // Convert images[] to image
+    image: p.images?.[0] || '',
+    images: p.images || [],
     category: p.category,
+    stock: p.stock,
   }));
 
   ApiResponse.success({
     data: transformedProducts,
-    meta: { nextCursor }
+    pagination: {
+      hasMore,
+      nextCursor,
+    }
   }, 'Products retrieved successfully').send(res);
 });
 
