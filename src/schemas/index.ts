@@ -44,3 +44,26 @@ export {
   productIdSchema as reviewProductIdSchema,
   CreateReviewInput,
 } from "./review.schema.js";
+
+export {
+  createAddressSchema,
+  updateAddressSchema,
+  addressIdSchema,
+  CreateAddressInput,
+  UpdateAddressInput,
+} from "./address.schema.js";
+
+export {
+  addPaymentMethodSchema,
+  paymentMethodIdSchema,
+  AddPaymentMethodInput,
+} from "./paymentMethod.schema.js";
+
+export {
+  createRefundSchema,
+  updateRefundStatusSchema,
+  refundIdSchema,
+  orderIdParamSchema,
+  CreateRefundInput,
+  UpdateRefundStatusInput,
+} from "./refund.schema.js";

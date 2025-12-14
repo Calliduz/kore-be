@@ -7,19 +7,22 @@
 
 ## Quick Reference
 
-| Module                    | Base Path                   | Auth Required          |
-| ------------------------- | --------------------------- | ---------------------- |
-| [Auth](#authentication)   | `/api/auth`                 | No (except logout, me) |
-| [Users](#users)           | `/api/users`                | Yes                    |
-| [Products](#products)     | `/api/products`             | No (except CRUD)       |
-| [Reviews](#reviews)       | `/api/products/:id/reviews` | Mixed                  |
-| [Orders](#orders)         | `/api/orders`               | Yes                    |
-| [Coupons](#coupons)       | `/api/coupons`              | Mixed                  |
-| [Wishlist](#wishlist)     | `/api/wishlist`             | Yes                    |
-| [Newsletter](#newsletter) | `/api/newsletter`           | No (except admin)      |
-| [Payments](#payments)     | `/api/payment`              | Yes                    |
-| [Checkout](#checkout)     | `/api/checkout`             | Yes                    |
-| [Config](#config)         | `/api/config`               | No                     |
+| Module                              | Base Path                    | Auth Required          |
+| ----------------------------------- | ---------------------------- | ---------------------- |
+| [Auth](#authentication)             | `/api/auth`                  | No (except logout, me) |
+| [Users](#users)                     | `/api/users`                 | Yes                    |
+| [Addresses](#addresses)             | `/api/users/addresses`       | Yes                    |
+| [Payment Methods](#payment-methods) | `/api/users/payment-methods` | Yes                    |
+| [Products](#products)               | `/api/products`              | No (except CRUD)       |
+| [Reviews](#reviews)                 | `/api/products/:id/reviews`  | Mixed                  |
+| [Orders](#orders)                   | `/api/orders`                | Yes                    |
+| [Refunds](#refunds)                 | `/api/orders/:id/refund`     | Mixed                  |
+| [Coupons](#coupons)                 | `/api/coupons`               | Mixed                  |
+| [Wishlist](#wishlist)               | `/api/wishlist`              | Yes                    |
+| [Newsletter](#newsletter)           | `/api/newsletter`            | No (except admin)      |
+| [Payments](#payments)               | `/api/payment`               | Yes                    |
+| [Checkout](#checkout)               | `/api/checkout`              | Yes                    |
+| [Config](#config)                   | `/api/config`                | No                     |
 
 ---
 
@@ -192,6 +195,146 @@ Delete a user.
 **Access**: Admin only
 
 **Note**: Cannot delete your own account (returns 403)
+
+---
+
+## Addresses
+
+### `GET /api/users/addresses`
+
+Get user's saved addresses.
+
+**Access**: Private
+
+**Response**:
+
+```json
+{
+  "success": true,
+  "data": {
+    "addresses": [
+      {
+        "_id": "...",
+        "label": "Home",
+        "address": "123 Main St",
+        "city": "New York",
+        "postalCode": "10001",
+        "country": "USA",
+        "isDefault": true,
+        "createdAt": "..."
+      }
+    ]
+  }
+}
+```
+
+---
+
+### `POST /api/users/addresses`
+
+Create new address.
+
+**Access**: Private
+
+**Request Body**:
+
+```json
+{
+  "label": "Home",
+  "address": "123 Main St",
+  "city": "New York",
+  "postalCode": "10001",
+  "country": "USA",
+  "isDefault": false
+}
+```
+
+---
+
+### `PUT /api/users/addresses/:id`
+
+Update address.
+
+**Access**: Private
+
+---
+
+### `PUT /api/users/addresses/:id/default`
+
+Set address as default.
+
+**Access**: Private
+
+---
+
+### `DELETE /api/users/addresses/:id`
+
+Delete address.
+
+**Access**: Private
+
+---
+
+## Payment Methods
+
+### `GET /api/users/payment-methods`
+
+Get user's saved payment methods.
+
+**Access**: Private
+
+**Response**:
+
+```json
+{
+  "success": true,
+  "data": {
+    "paymentMethods": [
+      {
+        "_id": "...",
+        "stripePaymentMethodId": "pm_...",
+        "last4": "4242",
+        "brand": "visa",
+        "expiryMonth": 12,
+        "expiryYear": 2025,
+        "isDefault": true
+      }
+    ]
+  }
+}
+```
+
+---
+
+### `POST /api/users/payment-methods`
+
+Add payment method (retrieves card details from Stripe).
+
+**Access**: Private
+
+**Request Body**:
+
+```json
+{
+  "stripePaymentMethodId": "pm_..."
+}
+```
+
+---
+
+### `PUT /api/users/payment-methods/:id/default`
+
+Set payment method as default.
+
+**Access**: Private
+
+---
+
+### `DELETE /api/users/payment-methods/:id`
+
+Remove payment method.
+
+**Access**: Private
 
 ---
 
@@ -452,6 +595,71 @@ Update order status.
   "status": "shipped" // "processing", "shipped", or "delivered"
 }
 ```
+
+---
+
+## Refunds
+
+### `POST /api/orders/:id/refund`
+
+Request refund for an order.
+
+**Access**: Private (order owner)
+
+**Request Body**:
+
+```json
+{
+  "reason": "damaged",
+  "description": "Item arrived broken",
+  "items": [{ "product": "product_id", "qty": 1 }]
+}
+```
+
+**Reason values**: `damaged`, `wrong_item`, `not_as_described`, `changed_mind`, `other`
+
+---
+
+### `GET /api/orders/:id/refund`
+
+Get refund status for an order.
+
+**Access**: Private
+
+---
+
+### `GET /api/users/refunds`
+
+Get all user's refund requests.
+
+**Access**: Private
+
+---
+
+### `GET /api/admin/refunds`
+
+Get all refund requests (admin).
+
+**Access**: Admin only
+
+---
+
+### `PUT /api/admin/refunds/:id`
+
+Update refund status.
+
+**Access**: Admin only
+
+**Request Body**:
+
+```json
+{
+  "status": "approved",
+  "adminNotes": "Refund approved, processing..."
+}
+```
+
+**Status values**: `approved`, `rejected`, `processed`
 
 ---
 
