@@ -1,14 +1,17 @@
-import express from 'express';
-import cors from 'cors';
-import helmet from 'helmet';
-import cookieParser from 'cookie-parser';
-import mongoSanitize from 'express-mongo-sanitize';
+import express from "express";
+import cors from "cors";
+import helmet from "helmet";
+import cookieParser from "cookie-parser";
+import mongoSanitize from "express-mongo-sanitize";
 
-import { env } from './config/env.js';
-import { connectDB, disconnectDB } from './config/db.js';
-import { globalRateLimiter } from './middleware/rateLimiter.middleware.js';
-import { errorHandler, notFoundHandler } from './middleware/errorHandler.middleware.js';
-import routes from './routes/index.js';
+import { env } from "./config/env.js";
+import { connectDB, disconnectDB } from "./config/db.js";
+import { globalRateLimiter } from "./middleware/rateLimiter.middleware.js";
+import {
+  errorHandler,
+  notFoundHandler,
+} from "./middleware/errorHandler.middleware.js";
+import routes from "./routes/index.js";
 
 /**
  * Create Express application
@@ -34,7 +37,7 @@ app.use(
         defaultSrc: ["'self'"],
         styleSrc: ["'self'", "'unsafe-inline'"],
         scriptSrc: ["'self'"],
-        imgSrc: ["'self'", 'data:', 'https:'],
+        imgSrc: ["'self'", "data:", "https:"],
       },
     },
     crossOriginEmbedderPolicy: false,
@@ -44,10 +47,10 @@ app.use(
 // 2. CORS - Allow frontend origin
 app.use(
   cors({
-    origin: env.CLIENT_URL,
+    origin: [env.CLIENT_URL, env.CLIENT_URL.replace(/^http:\/\//, "https://")],
     credentials: true, // Required for cookies
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
+    methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
   })
 );
 
@@ -58,8 +61,8 @@ app.use(globalRateLimiter);
 app.use(mongoSanitize());
 
 // 5. Body parsers
-app.use(express.json({ limit: '10mb' }));
-app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+app.use(express.json({ limit: "10mb" }));
+app.use(express.urlencoded({ extended: true, limit: "10mb" }));
 
 // 6. Cookie parser
 app.use(cookieParser());
@@ -67,12 +70,12 @@ app.use(cookieParser());
 /**
  * Trust proxy (for rate limiting behind reverse proxy)
  */
-app.set('trust proxy', 1);
+app.set("trust proxy", 1);
 
 /**
  * API Routes
  */
-app.use('/api', routes);
+app.use("/api", routes);
 
 /**
  * 404 Handler
@@ -93,12 +96,12 @@ const gracefulShutdown = async (signal: string) => {
   // Close database connection
   await disconnectDB();
 
-  console.log('Graceful shutdown completed');
+  console.log("Graceful shutdown completed");
   process.exit(0);
 };
 
-process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
-process.on('SIGINT', () => gracefulShutdown('SIGINT'));
+process.on("SIGTERM", () => gracefulShutdown("SIGTERM"));
+process.on("SIGINT", () => gracefulShutdown("SIGINT"));
 
 /**
  * Start Server
@@ -116,7 +119,7 @@ const startServer = async () => {
       console.log(`❤️  Health Check: http://localhost:${env.PORT}/health\n`);
     });
   } catch (error) {
-    console.error('Failed to start server:', error);
+    console.error("Failed to start server:", error);
     process.exit(1);
   }
 };
