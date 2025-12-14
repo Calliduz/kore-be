@@ -11,7 +11,11 @@ import newsletterRoutes from "./newsletter.routes.js";
 import couponRoutes from "./coupon.routes.js";
 import addressRoutes from "./address.routes.js";
 import paymentMethodRoutes from "./paymentMethod.routes.js";
-import refundRoutes from "./refund.routes.js";
+import {
+  userRefundsRouter,
+  adminRefundsRouter,
+  orderRefundsRouter,
+} from "./refund.routes.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 
 const router = Router();
@@ -36,12 +40,12 @@ router.get("/health", (_req: Request, res: Response) => {
 router.use("/auth", authRoutes);
 router.use("/products", productRoutes);
 router.use("/orders", orderRoutes);
+router.use("/orders", orderRefundsRouter); // For /orders/:id/refund routes
 router.use("/users", userRoutes);
 router.use("/users/addresses", addressRoutes);
 router.use("/users/payment-methods", paymentMethodRoutes);
-router.use("/users/refunds", refundRoutes);
-router.use("/admin/refunds", refundRoutes);
-router.use("/orders", refundRoutes); // For /orders/:id/refund routes
+router.use("/users/refunds", userRefundsRouter);
+router.use("/admin/refunds", adminRefundsRouter);
 router.use("/config", configRoutes);
 router.use("/payment", paymentRoutes);
 router.use("/checkout", checkoutRoutes);

@@ -19,37 +19,37 @@ import {
   orderIdParamSchema,
 } from "../schemas/refund.schema.js";
 
-const router = Router();
-
 // ============================================
-// User Routes
+// User Refunds Router (mounted at /api/users/refunds)
 // ============================================
+export const userRefundsRouter = Router();
 
 /**
  * @route   GET /api/users/refunds
  * @desc    Get all user's refund requests
  * @access  Private
  */
-router.get("/user", authenticate, getUserRefunds);
+userRefundsRouter.get("/", authenticate, getUserRefunds);
 
 // ============================================
-// Admin Routes
+// Admin Refunds Router (mounted at /api/admin/refunds)
 // ============================================
+export const adminRefundsRouter = Router();
 
 /**
  * @route   GET /api/admin/refunds
  * @desc    Get all refund requests
  * @access  Private/Admin
  */
-router.get("/admin", authenticate, authorize("admin"), getAllRefunds);
+adminRefundsRouter.get("/", authenticate, authorize("admin"), getAllRefunds);
 
 /**
  * @route   PUT /api/admin/refunds/:id
  * @desc    Update refund status
  * @access  Private/Admin
  */
-router.put(
-  "/admin/:id",
+adminRefundsRouter.put(
+  "/:id",
   authenticate,
   authorize("admin"),
   validateMultiple({ params: refundIdSchema, body: updateRefundStatusSchema }),
@@ -57,16 +57,17 @@ router.put(
 );
 
 // ============================================
-// Order-specific Routes (nested under orders)
+// Order Refunds Router (mounted at /api/orders)
 // ============================================
+export const orderRefundsRouter = Router();
 
 /**
  * @route   POST /api/orders/:id/refund
  * @desc    Request refund for an order
  * @access  Private
  */
-router.post(
-  "/order/:id",
+orderRefundsRouter.post(
+  "/:id/refund",
   authenticate,
   validateMultiple({ params: orderIdParamSchema, body: createRefundSchema }),
   createRefundRequest
@@ -77,11 +78,13 @@ router.post(
  * @desc    Get refund status for an order
  * @access  Private
  */
-router.get(
-  "/order/:id",
+orderRefundsRouter.get(
+  "/:id/refund",
   authenticate,
   validate(orderIdParamSchema, "params"),
   getOrderRefund
 );
 
+// Default export for backwards compatibility (not used)
+const router = Router();
 export default router;
