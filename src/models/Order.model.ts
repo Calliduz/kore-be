@@ -1,4 +1,4 @@
-import mongoose, { Schema, Document } from 'mongoose';
+import mongoose, { Schema, Document } from "mongoose";
 
 // Order item interface
 export interface IOrderItem {
@@ -40,6 +40,7 @@ export interface IOrderDocument extends Document {
   paidAt?: Date;
   isDelivered: boolean;
   deliveredAt?: Date;
+  status: "processing" | "shipped" | "delivered";
   createdAt: Date;
   updatedAt: Date;
 }
@@ -48,7 +49,7 @@ const orderItemSchema = new Schema<IOrderItem>(
   {
     product: {
       type: Schema.Types.ObjectId,
-      ref: 'Product',
+      ref: "Product",
       required: true,
     },
     name: {
@@ -58,12 +59,12 @@ const orderItemSchema = new Schema<IOrderItem>(
     qty: {
       type: Number,
       required: true,
-      min: [1, 'Quantity must be at least 1'],
+      min: [1, "Quantity must be at least 1"],
     },
     price: {
       type: Number,
       required: true,
-      min: [0, 'Price cannot be negative'],
+      min: [0, "Price cannot be negative"],
     },
     image: {
       type: String,
@@ -77,19 +78,19 @@ const shippingAddressSchema = new Schema<IShippingAddress>(
   {
     address: {
       type: String,
-      required: [true, 'Address is required'],
+      required: [true, "Address is required"],
     },
     city: {
       type: String,
-      required: [true, 'City is required'],
+      required: [true, "City is required"],
     },
     postalCode: {
       type: String,
-      required: [true, 'Postal code is required'],
+      required: [true, "Postal code is required"],
     },
     country: {
       type: String,
-      required: [true, 'Country is required'],
+      required: [true, "Country is required"],
     },
   },
   { _id: false }
@@ -109,7 +110,7 @@ const orderSchema = new Schema<IOrderDocument>(
   {
     user: {
       type: Schema.Types.ObjectId,
-      ref: 'User',
+      ref: "User",
       required: true,
       index: true,
     },
@@ -118,7 +119,7 @@ const orderSchema = new Schema<IOrderDocument>(
       required: true,
       validate: {
         validator: (items: IOrderItem[]) => items.length > 0,
-        message: 'Order must have at least one item',
+        message: "Order must have at least one item",
       },
     },
     shippingAddress: {
@@ -127,8 +128,8 @@ const orderSchema = new Schema<IOrderDocument>(
     },
     paymentMethod: {
       type: String,
-      required: [true, 'Payment method is required'],
-      enum: ['stripe', 'paypal', 'card'],
+      required: [true, "Payment method is required"],
+      enum: ["stripe", "paypal", "card"],
     },
     paymentResult: {
       type: paymentResultSchema,
@@ -138,18 +139,18 @@ const orderSchema = new Schema<IOrderDocument>(
       type: Number,
       required: true,
       default: 0.0,
-      min: [0, 'Tax price cannot be negative'],
+      min: [0, "Tax price cannot be negative"],
     },
     shippingPrice: {
       type: Number,
       required: true,
       default: 0.0,
-      min: [0, 'Shipping price cannot be negative'],
+      min: [0, "Shipping price cannot be negative"],
     },
     totalPrice: {
       type: Number,
       required: true,
-      min: [0, 'Total price cannot be negative'],
+      min: [0, "Total price cannot be negative"],
     },
     isPaid: {
       type: Boolean,
@@ -163,6 +164,11 @@ const orderSchema = new Schema<IOrderDocument>(
       type: Boolean,
       required: true,
       default: false,
+    },
+    status: {
+      type: String,
+      enum: ["processing", "shipped", "delivered"],
+      default: "processing",
     },
     deliveredAt: {
       type: Date,
@@ -184,4 +190,4 @@ orderSchema.index({ user: 1, createdAt: -1 });
 orderSchema.index({ isPaid: 1, isDelivered: 1 });
 orderSchema.index({ createdAt: -1 });
 
-export const Order = mongoose.model<IOrderDocument>('Order', orderSchema);
+export const Order = mongoose.model<IOrderDocument>("Order", orderSchema);

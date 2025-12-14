@@ -1,5 +1,9 @@
-import { Router } from 'express';
-import { authenticate, authorize, validateMultiple } from '../middleware/index.js';
+import { Router } from "express";
+import {
+  authenticate,
+  authorize,
+  validateMultiple,
+} from "../middleware/index.js";
 import {
   addOrderItems,
   getOrderById,
@@ -7,8 +11,14 @@ import {
   updateOrderToDelivered,
   getMyOrders,
   getAllOrders,
-} from '../controllers/order.controller.js';
-import { createOrderSchema, updatePaymentSchema, orderIdSchema } from '../schemas/order.schema.js';
+  updateOrderStatus,
+} from "../controllers/order.controller.js";
+import {
+  createOrderSchema,
+  updatePaymentSchema,
+  orderIdSchema,
+  updateStatusSchema,
+} from "../schemas/order.schema.js";
 
 const router = Router();
 
@@ -18,7 +28,7 @@ const router = Router();
  * @access  Private
  */
 router.post(
-  '/',
+  "/",
   authenticate,
   validateMultiple({ body: createOrderSchema }),
   addOrderItems
@@ -29,7 +39,7 @@ router.post(
  * @desc    Get logged in user's orders
  * @access  Private
  */
-router.get('/myorders', authenticate, getMyOrders);
+router.get("/myorders", authenticate, getMyOrders);
 
 /**
  * @route   GET /api/orders/:id
@@ -37,7 +47,7 @@ router.get('/myorders', authenticate, getMyOrders);
  * @access  Private
  */
 router.get(
-  '/:id',
+  "/:id",
   authenticate,
   validateMultiple({ params: orderIdSchema }),
   getOrderById
@@ -49,7 +59,7 @@ router.get(
  * @access  Private
  */
 router.put(
-  '/:id/pay',
+  "/:id/pay",
   authenticate,
   validateMultiple({ params: orderIdSchema, body: updatePaymentSchema }),
   updateOrderToPaid
@@ -61,11 +71,24 @@ router.put(
  * @access  Private/Admin
  */
 router.put(
-  '/:id/deliver',
+  "/:id/deliver",
   authenticate,
-  authorize('admin'),
+  authorize("admin"),
   validateMultiple({ params: orderIdSchema }),
   updateOrderToDelivered
+);
+
+/**
+ * @route   PUT /api/orders/:id/status
+ * @desc    Update order status
+ * @access  Private/Admin
+ */
+router.put(
+  "/:id/status",
+  authenticate,
+  authorize("admin"),
+  validateMultiple({ params: orderIdSchema, body: updateStatusSchema }),
+  updateOrderStatus
 );
 
 /**
@@ -73,6 +96,6 @@ router.put(
  * @desc    Get all orders
  * @access  Private/Admin
  */
-router.get('/', authenticate, authorize('admin'), getAllOrders);
+router.get("/", authenticate, authorize("admin"), getAllOrders);
 
 export default router;

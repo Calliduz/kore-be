@@ -6,7 +6,7 @@ export {
   RegisterInput,
   LoginInput,
   ChangePasswordInput,
-} from './auth.schema.js';
+} from "./auth.schema.js";
 
 export {
   createProductSchema,
@@ -16,14 +16,31 @@ export {
   CreateProductInput,
   UpdateProductInput,
   ProductQuery,
-} from './product.schema.js';
+} from "./product.schema.js";
 
 export {
   createOrderSchema,
   updatePaymentSchema,
   orderIdSchema,
+  updateStatusSchema,
   CreateOrderInput,
   UpdatePaymentInput,
   OrderIdParam,
-} from './order.schema.js';
+  UpdateStatusInput,
+} from "./order.schema.js";
 
+export {
+  createCouponSchema,
+  updateCouponSchema,
+  validateCouponSchema,
+  couponIdSchema,
+  CreateCouponInput,
+  UpdateCouponInput,
+  ValidateCouponInput,
+} from "./coupon.schema.js";
+
+export {
+  createReviewSchema,
+  productIdSchema as reviewProductIdSchema,
+  CreateReviewInput,
+} from "./review.schema.js";
