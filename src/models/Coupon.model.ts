@@ -74,7 +74,7 @@ const couponSchema = new Schema<ICouponDocument>(
 );
 
 // Indexes
-couponSchema.index({ code: 1 });
+
 couponSchema.index({ isActive: 1 });
 couponSchema.index({ expiresAt: 1 });
 
