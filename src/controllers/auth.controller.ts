@@ -1,33 +1,35 @@
-import { Response } from 'express';
-import { env } from '../config/env.js';
-import { AuthRequest } from '../types/index.js';
-import { ApiResponse } from '../utils/ApiResponse.js';
-import { asyncHandler } from '../middleware/index.js';
+import { Response } from "express";
+import { env } from "../config/env.js";
+import { AuthRequest } from "../types/index.js";
+import { ApiResponse } from "../utils/ApiResponse.js";
+import { asyncHandler } from "../middleware/index.js";
 import {
   registerUser,
   loginUser,
   refreshAccessToken,
   logoutUser,
-} from '../services/auth.service.js';
-import { RegisterInput, LoginInput } from '../schemas/index.js';
+} from "../services/auth.service.js";
+import { RegisterInput, LoginInput } from "../schemas/index.js";
 
 /**
  * Cookie options for secure token storage
  */
 const getAccessTokenCookieOptions = () => ({
   httpOnly: true,
-  secure: env.NODE_ENV === 'production',
-  sameSite: 'lax' as const,
+  secure: env.NODE_ENV === "production",
+  sameSite: (env.NODE_ENV === "production" ? "none" : "lax") as "none" | "lax",
+  domain: env.NODE_ENV === "production" ? env.COOKIE_DOMAIN : undefined,
   maxAge: 15 * 60 * 1000, // 15 minutes
-  path: '/',
+  path: "/",
 });
 
 const getRefreshTokenCookieOptions = () => ({
   httpOnly: true,
-  secure: env.NODE_ENV === 'production',
-  sameSite: 'lax' as const,
+  secure: env.NODE_ENV === "production",
+  sameSite: (env.NODE_ENV === "production" ? "none" : "lax") as "none" | "lax",
+  domain: env.NODE_ENV === "production" ? env.COOKIE_DOMAIN : undefined,
   maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-  path: '/api/auth', // Only sent to auth routes
+  path: "/api/auth", // Only sent to auth routes
 });
 
 /**
@@ -38,42 +40,44 @@ const setAuthCookies = (
   accessToken: string,
   refreshToken: string
 ): void => {
-  res.cookie('accessToken', accessToken, getAccessTokenCookieOptions());
-  res.cookie('refreshToken', refreshToken, getRefreshTokenCookieOptions());
+  res.cookie("accessToken", accessToken, getAccessTokenCookieOptions());
+  res.cookie("refreshToken", refreshToken, getRefreshTokenCookieOptions());
 };
 
 /**
  * Clear authentication cookies
  */
 const clearAuthCookies = (res: Response): void => {
-  res.clearCookie('accessToken', { path: '/' });
-  res.clearCookie('refreshToken', { path: '/api/auth' });
+  res.clearCookie("accessToken", { path: "/" });
+  res.clearCookie("refreshToken", { path: "/api/auth" });
 };
 
 /**
  * POST /api/auth/register
  * Register a new user
  */
-export const register = asyncHandler(async (req: AuthRequest, res: Response) => {
-  const input = req.body as RegisterInput;
+export const register = asyncHandler(
+  async (req: AuthRequest, res: Response) => {
+    const input = req.body as RegisterInput;
 
-  const { user, tokens } = await registerUser(input);
+    const { user, tokens } = await registerUser(input);
 
-  // Set httpOnly cookies
-  setAuthCookies(res, tokens.accessToken, tokens.refreshToken);
+    // Set httpOnly cookies
+    setAuthCookies(res, tokens.accessToken, tokens.refreshToken);
 
-  ApiResponse.created(
-    {
-      user: {
-        id: user._id,
-        email: user.email,
-        name: user.name,
-        role: user.role,
+    ApiResponse.created(
+      {
+        user: {
+          id: user._id,
+          email: user.email,
+          name: user.name,
+          role: user.role,
+        },
       },
-    },
-    'Registration successful'
-  ).send(res);
-});
+      "Registration successful"
+    ).send(res);
+  }
+);
 
 /**
  * POST /api/auth/login
@@ -96,7 +100,7 @@ export const login = asyncHandler(async (req: AuthRequest, res: Response) => {
         role: user.role,
       },
     },
-    'Login successful'
+    "Login successful"
   ).send(res);
 });
 
@@ -109,7 +113,7 @@ export const refresh = asyncHandler(async (req: AuthRequest, res: Response) => {
 
   if (!refreshToken) {
     clearAuthCookies(res);
-    ApiResponse.unauthorized('Refresh token not found').send(res);
+    ApiResponse.unauthorized("Refresh token not found").send(res);
     return;
   }
 
@@ -117,14 +121,14 @@ export const refresh = asyncHandler(async (req: AuthRequest, res: Response) => {
 
   if (!tokens) {
     clearAuthCookies(res);
-    ApiResponse.unauthorized('Invalid or expired refresh token').send(res);
+    ApiResponse.unauthorized("Invalid or expired refresh token").send(res);
     return;
   }
 
   // Set new httpOnly cookies (rotation)
   setAuthCookies(res, tokens.accessToken, tokens.refreshToken);
 
-  ApiResponse.success(null, 'Token refreshed successfully').send(res);
+  ApiResponse.success(null, "Token refreshed successfully").send(res);
 });
 
 /**
@@ -138,7 +142,7 @@ export const logout = asyncHandler(async (req: AuthRequest, res: Response) => {
 
   clearAuthCookies(res);
 
-  ApiResponse.success(null, 'Logout successful').send(res);
+  ApiResponse.success(null, "Logout successful").send(res);
 });
 
 /**
@@ -147,7 +151,7 @@ export const logout = asyncHandler(async (req: AuthRequest, res: Response) => {
  */
 export const getMe = asyncHandler(async (req: AuthRequest, res: Response) => {
   if (!req.user) {
-    ApiResponse.unauthorized('Not authenticated').send(res);
+    ApiResponse.unauthorized("Not authenticated").send(res);
     return;
   }
 
@@ -161,6 +165,6 @@ export const getMe = asyncHandler(async (req: AuthRequest, res: Response) => {
         createdAt: req.user.createdAt,
       },
     },
-    'User profile retrieved'
+    "User profile retrieved"
   ).send(res);
 });
